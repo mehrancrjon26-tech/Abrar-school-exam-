@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>آزمون آنلاین</title>
+<style>
+:root{--p:#eef2f5;--i:#12263a;--a:#0e7c86;--r:#c0392b;--l:#cbd5de}
+body{font-family:Tahoma,sans-serif;background:var(--p);color:var(--i);margin:0;padding:14px;line-height:1.9}
+#app{max-width:640px;margin:auto}
+.q{background:#fff;border-right:5px solid var(--a);border-radius:8px;padding:12px 14px;margin:12px 0}
+input,textarea,button{width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border-radius:8px;border:1px solid var(--l);font:inherit;color:var(--i);background:#fff}
+button{background:var(--a);color:#fff;border:0}
+label.o{display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--l);border-radius:8px;margin:6px 0}
+label.o input{width:auto;margin:0}
+#tm{position:sticky;top:0;background:var(--i);color:#fff;padding:8px;text-align:center;border-radius:8px;z-index:5}
+#tm.low{background:var(--r)}
+textarea{min-height:70px}
+</style></head><body><div id="app">در حال بارگذاری…</div>
+<script>
+const $=id=>document.getElementById(id),A=$('app');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+const H=s=>{let h=5381;for(const c of s)h=(h*33^c.charCodeAt(0))>>>0;return h.toString(36)};
+let E,S,away=null,tk;
+const K=()=>'ex_'+E.id,save=()=>localStorage.setItem(K(),JSON.stringify(S));
+fetch('exam.json?'+Date.now()).then(r=>r.json()).then(e=>{E=e;S=JSON.parse(localStorage.getItem(K())||'null');
+ if(!S)login();else if(S.done)fin();else{S.ch.push({t:new Date().toLocaleTimeString('fa-IR'),y:'ورود مجدد به آزمون',s:0});save();run()}
+}).catch(()=>A.textContent='آزمون هنوز منتشر نشده است.');
+function login(){A.innerHTML=`<h2>${esc(E.title)}</h2><p>مدت آزمون: ${E.minutes} دقیقه. زمان با ترک صفحه متوقف نمی‌شود و هر خروج از صفحه، حتی یک لحظه، به‌عنوان تقلب ثبت می‌شود.</p><input id=n placeholder="نام و نام خانوادگی"><input id=i placeholder="کد ملی" inputmode=numeric><button onclick=start()>شروع آزمون</button>`}
+function start(){const n=$('n').value.trim(),i=$('i').value.trim();if(!n||!i)return alert('نام و کد ملی را وارد کنید');S={n,i,st:Date.now(),a:{},ch:[],done:0};save();run()}
+function run(){A.innerHTML=`<div id=tm></div>`+E.q.map((q,k)=>`<div class=q><b>${k+1}.</b> ${esc(q.q)}`+(q.t=='mc'?q.o.map((o,j)=>`<label class=o><input type=radio name=q${k} ${S.a[k]===j?'checked':''} onchange="ans(${k},${j})">${esc(o)}</label>`).join(''):`<textarea oninput="ans(${k},this.value)">${esc(S.a[k]||'')}</textarea>`)+`</div>`).join('')+`<button onclick="if(confirm('پایان آزمون؟'))end()">ثبت نهایی و دریافت کد</button>`;
+ clearInterval(tk);tk=setInterval(tick,1000);tick()}
+function ans(k,v){S.a[k]=v;save()}
+function tick(){const L=S.st+E.minutes*60000-Date.now();if(L<=0)return end();const m=Math.floor(L/60000),s=Math.floor(L/1000)%60;const t=$('tm');t.textContent=`زمان باقی‌مانده: ${m}:${String(s).padStart(2,'0')}`;t.className=L<60000?'low':''}
+function end(){clearInterval(tk);back();S.done=1;S.et=Date.now();save();fin()}
+function fin(){const p=enc({id:E.id,n:S.n,i:S.i,a:S.a,ch:S.ch,st:S.st,et:S.et}),code=p+'.'+H(p+E.key);
+ A.innerHTML=`<h2>آزمون ثبت شد</h2><p>کد زیر را کپی کنید و برای مدیر مدرسه بفرستید:</p><textarea id=cd readonly>${code}</textarea><button onclick="$('cd').select();document.execCommand('copy');this.textContent='کپی شد'">کپی کد</button>`}
+function out(y){if(S&&!S.done&&away===null){away=Date.now();S.ch.push({t:new Date().toLocaleTimeString('fa-IR'),y,s:0});save()}}
+function back(){if(away!==null&&S.ch.length){S.ch[S.ch.length-1].s=Math.round((Date.now()-away)/1000);away=null;save()}}
+document.addEventListener('visibilitychange',()=>document.hidden?out('تغییر تب یا خروج از برنامه'):back());
+addEventListener('blur',()=>out('خروج از صفحه'));addEventListener('focus',back);addEventListener('pagehide',()=>out('بستن صفحه'));
+</script></body></html>
